@@ -2,7 +2,6 @@ package nvb.dev.kavoshsampleproject.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,11 +27,6 @@ public class UserInfo {
     @NotBlank(message = "username cannot be blank.")
     @Column(name = "username", unique = true)
     private String username;
-
-    @NotBlank(message = "email cannot be blank.")
-    @Email
-    @Column(name = "email", unique = true)
-    private String email;
 
     @NotBlank(message = "password cannot be blank.")
     private String password;

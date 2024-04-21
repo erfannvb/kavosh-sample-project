@@ -16,9 +16,6 @@ public class UserInfoDto {
     @NotBlank(message = "username cannot be blank.")
     private String username;
 
-    @NotBlank(message = "email cannot be blank.")
-    private String email;
-
     @NotBlank(message = "password cannot be blank.")
     private String password;
 
