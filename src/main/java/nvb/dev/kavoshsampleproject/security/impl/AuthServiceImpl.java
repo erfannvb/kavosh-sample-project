@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import nvb.dev.kavoshsampleproject.config.UserInfoConfig;
 import nvb.dev.kavoshsampleproject.dto.request.AuthRequest;
 import nvb.dev.kavoshsampleproject.dto.response.JwtAuthResponse;
-import nvb.dev.kavoshsampleproject.repository.UserRepository;
+import nvb.dev.kavoshsampleproject.repository.UserInfoRepository;
 import nvb.dev.kavoshsampleproject.security.AuthService;
 import nvb.dev.kavoshsampleproject.security.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,7 +18,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final UserRepository userRepository;
+    private final UserInfoRepository userRepository;
 
     @Override
     public JwtAuthResponse authenticate(AuthRequest authRequest) {
