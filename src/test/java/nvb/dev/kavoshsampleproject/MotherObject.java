@@ -2,6 +2,8 @@ package nvb.dev.kavoshsampleproject;
 
 import nvb.dev.kavoshsampleproject.dto.UserDto;
 import nvb.dev.kavoshsampleproject.entity.User;
+import nvb.dev.kavoshsampleproject.security.response.JwtAuthResponse;
+import org.springframework.security.core.userdetails.UserDetails;
 
 public class MotherObject {
 
@@ -41,6 +43,20 @@ public class MotherObject {
                 .fullName(null)
                 .username(null)
                 .password(null)
+                .build();
+    }
+
+    public static UserDetails anyValidUserDetails() {
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(ANY_STRING)
+                .password(ANY_STRING)
+                .authorities("ROLE_USER")
+                .build();
+    }
+
+    public static JwtAuthResponse anyValidJwtAuthResponse() {
+        return JwtAuthResponse.builder()
+                .token(ANY_STRING)
                 .build();
     }
 
