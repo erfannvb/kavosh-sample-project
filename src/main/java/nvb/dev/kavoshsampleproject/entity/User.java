@@ -1,5 +1,6 @@
 package nvb.dev.kavoshsampleproject.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -13,6 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class User {
 
     @Id
