@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.function.Supplier;
 
 @RestController
 @RequestMapping(path = "/api/v1")
@@ -23,67 +25,47 @@ public class PostController {
     private final PostService postService;
     private final PostMapper postMapper;
     private final PostLockService postLockService;
-    private final Object lockObject = new Object();
-    private final AtomicBoolean isProcessing = new AtomicBoolean(false);
 
     @PostMapping(path = "/post/save")
-    public ResponseEntity<PostDto> savePost(@RequestBody @Valid PostDto postDto) throws InterruptedException {
-        synchronized (lockObject) {
-            while (isProcessing.get()) {
-                lockObject.wait(10000);
-            }
-            isProcessing.set(true);
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+    public ResponseEntity<?> savePost(@RequestBody @Valid PostDto postDto) throws InterruptedException {
+        return executeWithLock(() -> {
             Post post = postMapper.toPost(postDto);
             Post savedPost = postService.savePost(post);
-            isProcessing.set(false);
-            lockObject.notifyAll();
             return new ResponseEntity<>(postMapper.toPostDto(savedPost), HttpStatus.CREATED);
-        }
+        });
     }
 
     @GetMapping(path = "/post/{id}")
-    public ResponseEntity<PostDto> getPostById(@PathVariable Long id) throws InterruptedException {
-        synchronized (lockObject) {
-            while (isProcessing.get()) {
-                lockObject.wait(10000);
-            }
-            isProcessing.set(true);
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+    public ResponseEntity<?> getPostById(@PathVariable Long id) throws InterruptedException {
+        return executeWithLock(() -> {
             Optional<Post> foundPost = postService.getPostById(id);
-            isProcessing.set(false);
-            lockObject.notifyAll();
             return foundPost.map(post -> {
                 PostDto postDto = postMapper.toPostDto(post);
                 return new ResponseEntity<>(postDto, HttpStatus.OK);
             }).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
-        }
+        });
     }
 
     @GetMapping(path = "/post/all")
-    public ResponseEntity<List<PostDto>> getAllPosts() throws InterruptedException {
-        synchronized (lockObject) {
-            while (isProcessing.get()) {
-                lockObject.wait(10000);
-            }
-            isProcessing.set(true);
+    public ResponseEntity<?> getAllPosts() throws InterruptedException {
+        return executeWithLock(() -> {
+            List<Post> postList = postService.getAllPosts();
+            List<PostDto> postDtoList = postList.stream().map(postMapper::toPostDto).toList();
+            return ResponseEntity.ok().body(postDtoList);
+        });
+    }
+
+    private ResponseEntity<?> executeWithLock(Supplier<ResponseEntity<?>> operation) throws InterruptedException {
+        Lock lock = postLockService.getLock();
+        if (lock.tryLock()) {
             try {
                 Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+                return operation.get();
+            } finally {
+                lock.unlock();
             }
-            List<Post> allPosts = postService.getAllPosts();
-            List<PostDto> postDtoList = allPosts.stream().map(postMapper::toPostDto).toList();
-            isProcessing.set(false);
-            return new ResponseEntity<>(postDtoList, HttpStatus.OK);
+        } else {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Another action is in progress. Please try again later.");
         }
     }
 
