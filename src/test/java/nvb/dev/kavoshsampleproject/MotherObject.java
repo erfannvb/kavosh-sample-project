@@ -1,6 +1,8 @@
 package nvb.dev.kavoshsampleproject;
 
+import nvb.dev.kavoshsampleproject.dto.PostDto;
 import nvb.dev.kavoshsampleproject.dto.UserDto;
+import nvb.dev.kavoshsampleproject.entity.Post;
 import nvb.dev.kavoshsampleproject.entity.User;
 import nvb.dev.kavoshsampleproject.security.response.JwtAuthResponse;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -57,6 +59,34 @@ public class MotherObject {
     public static JwtAuthResponse anyValidJwtAuthResponse() {
         return JwtAuthResponse.builder()
                 .token(ANY_STRING)
+                .build();
+    }
+
+    public static Post anyValidPost() {
+        return Post.builder()
+                .id(ANY_ID)
+                .title(ANY_STRING)
+                .build();
+    }
+
+    public static Post anyInvalidPost() {
+        return Post.builder()
+                .id(null)
+                .title(null)
+                .build();
+    }
+
+    public static PostDto anyValidPostDto() {
+        return PostDto.builder()
+                .id(ANY_ID)
+                .title(ANY_STRING)
+                .build();
+    }
+
+    public static PostDto anyInvalidPostDto() {
+        return PostDto.builder()
+                .id(null)
+                .title(null)
                 .build();
     }
 
