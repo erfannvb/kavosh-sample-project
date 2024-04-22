@@ -23,14 +23,16 @@ public class PostController {
     private final PostService postService;
     private final PostMapper postMapper;
     private final PostLockService postLockService;
+    private final Object lockObject = new Object();
     private final AtomicBoolean isProcessing = new AtomicBoolean(false);
 
     @PostMapping(path = "/post/save")
-    public ResponseEntity<PostDto> savePost(@RequestBody @Valid PostDto postDto) {
-        synchronized (postLockService.getLock()) {
-            if (!isProcessing.compareAndSet(false, true)) {
-                return new ResponseEntity<>(HttpStatus.CONFLICT);
+    public ResponseEntity<PostDto> savePost(@RequestBody @Valid PostDto postDto) throws InterruptedException {
+        synchronized (lockObject) {
+            while (isProcessing.get()) {
+                lockObject.wait(10000);
             }
+            isProcessing.set(true);
             try {
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
@@ -39,16 +41,18 @@ public class PostController {
             Post post = postMapper.toPost(postDto);
             Post savedPost = postService.savePost(post);
             isProcessing.set(false);
+            lockObject.notifyAll();
             return new ResponseEntity<>(postMapper.toPostDto(savedPost), HttpStatus.CREATED);
         }
     }
 
     @GetMapping(path = "/post/{id}")
-    public ResponseEntity<PostDto> getPostById(@PathVariable Long id) {
-        synchronized (postLockService.getLock()) {
-            if (!isProcessing.compareAndSet(false, true)) {
-                return new ResponseEntity<>(HttpStatus.CONFLICT);
+    public ResponseEntity<PostDto> getPostById(@PathVariable Long id) throws InterruptedException {
+        synchronized (lockObject) {
+            while (isProcessing.get()) {
+                lockObject.wait(10000);
             }
+            isProcessing.set(true);
             try {
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
@@ -56,6 +60,7 @@ public class PostController {
             }
             Optional<Post> foundPost = postService.getPostById(id);
             isProcessing.set(false);
+            lockObject.notifyAll();
             return foundPost.map(post -> {
                 PostDto postDto = postMapper.toPostDto(post);
                 return new ResponseEntity<>(postDto, HttpStatus.OK);
@@ -64,11 +69,12 @@ public class PostController {
     }
 
     @GetMapping(path = "/post/all")
-    public ResponseEntity<List<PostDto>> getAllPosts() {
-        synchronized (postLockService.getLock()) {
-            if (!isProcessing.compareAndSet(false, true)) {
-                return new ResponseEntity<>(HttpStatus.CONFLICT);
+    public ResponseEntity<List<PostDto>> getAllPosts() throws InterruptedException {
+        synchronized (lockObject) {
+            while (isProcessing.get()) {
+                lockObject.wait(10000);
             }
+            isProcessing.set(true);
             try {
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
