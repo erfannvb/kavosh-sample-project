@@ -28,8 +28,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .build(), HttpStatus.NOT_ACCEPTABLE);
     }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponseModel> handleUserNotFoundException(RuntimeException ex) {
+    @ExceptionHandler({UserNotFoundException.class, PostNotFoundException.class})
+    public ResponseEntity<ErrorResponseModel> handleNotFoundExceptions(RuntimeException ex) {
         return new ResponseEntity<>(ErrorResponseModel.builder()
                 .title("Not Found")
                 .detail(ex.getLocalizedMessage())
