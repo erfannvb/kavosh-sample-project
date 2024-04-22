@@ -13,9 +13,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 @RestController
 @RequestMapping(path = "/api/v1")
@@ -27,45 +26,71 @@ public class PostController {
     private final PostLockService postLockService;
 
     @PostMapping(path = "/post/save")
-    public ResponseEntity<?> savePost(@RequestBody @Valid PostDto postDto) throws InterruptedException {
-        return executeWithLock(() -> {
-            Post post = postMapper.toPost(postDto);
-            Post savedPost = postService.savePost(post);
-            return new ResponseEntity<>(postMapper.toPostDto(savedPost), HttpStatus.CREATED);
+    public ResponseEntity<PostDto> savePost(@RequestBody @Valid PostDto postDto) throws InterruptedException {
+        return executeWithLock(locked -> {
+            if (Boolean.TRUE.equals(locked)) {
+                Post post = postMapper.toPost(postDto);
+                Post savedPost = postService.savePost(post);
+                return new ResponseEntity<>(postMapper.toPostDto(savedPost), HttpStatus.CREATED);
+            } else {
+                return new ResponseEntity<>(HttpStatus.CONFLICT);
+            }
         });
     }
 
     @GetMapping(path = "/post/{id}")
-    public ResponseEntity<?> getPostById(@PathVariable Long id) throws InterruptedException {
-        return executeWithLock(() -> {
-            Optional<Post> foundPost = postService.getPostById(id);
-            return foundPost.map(post -> {
-                PostDto postDto = postMapper.toPostDto(post);
-                return new ResponseEntity<>(postDto, HttpStatus.OK);
-            }).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    public ResponseEntity<PostDto> getPostById(@PathVariable("id") Long id) throws InterruptedException {
+        return executeWithLock(locked -> {
+            if (Boolean.TRUE.equals(locked)) {
+                Optional<Post> foundPost = postService.getPostById(id);
+                return foundPost.map(post -> {
+                    PostDto postDto = postMapper.toPostDto(post);
+                    return new ResponseEntity<>(postDto, HttpStatus.OK);
+                }).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+            } else {
+                return new ResponseEntity<>(HttpStatus.CONFLICT);
+            }
         });
     }
 
     @GetMapping(path = "/post/all")
-    public ResponseEntity<?> getAllPosts() throws InterruptedException {
-        return executeWithLock(() -> {
-            List<Post> postList = postService.getAllPosts();
-            List<PostDto> postDtoList = postList.stream().map(postMapper::toPostDto).toList();
-            return ResponseEntity.ok().body(postDtoList);
+    public ResponseEntity<List<PostDto>> getAllPosts() throws InterruptedException {
+        return executeListWithLock(locked -> {
+            if (Boolean.TRUE.equals(locked)) {
+                List<Post> posts = postService.getAllPosts();
+                List<PostDto> postDtoList = posts.stream().map(postMapper::toPostDto).toList();
+                return new ResponseEntity<>(postDtoList, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(HttpStatus.CONFLICT);
+            }
         });
     }
 
-    private ResponseEntity<?> executeWithLock(Supplier<ResponseEntity<?>> operation) throws InterruptedException {
+    private ResponseEntity<PostDto> executeWithLock(Function<Boolean, ResponseEntity<PostDto>> operation) throws InterruptedException {
         Lock lock = postLockService.getLock();
         if (lock.tryLock()) {
             try {
                 Thread.sleep(10000);
-                return operation.get();
+                return operation.apply(true);
             } finally {
                 lock.unlock();
             }
         } else {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Another action is in progress. Please try again later.");
+            return operation.apply(false);
+        }
+    }
+
+    private ResponseEntity<List<PostDto>> executeListWithLock(Function<Boolean, ResponseEntity<List<PostDto>>> operation) throws InterruptedException {
+        Lock lock = postLockService.getLock();
+        if (lock.tryLock()) {
+            try {
+                Thread.sleep(10000);
+                return operation.apply(true);
+            } finally {
+                lock.unlock();
+            }
+        } else {
+            return operation.apply(false);
         }
     }
 
