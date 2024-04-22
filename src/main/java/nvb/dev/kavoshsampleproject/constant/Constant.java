@@ -5,7 +5,7 @@ public class Constant {
     private Constant() {
     }
 
-    public static final int TOKEN_EXPIRATION_TIME = 1000 * 60 * 24;
+    public static final int TOKEN_EXPIRATION_TIME = 1000 * 60 * 30;
     public static final int REFRESH_TOKEN_EXPIRATION_TIME = 604800000;
 
     public static final String BEARER = "Bearer ";
