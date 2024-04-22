@@ -21,13 +21,14 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static nvb.dev.kavoshsampleproject.MotherObject.*;
 import static nvb.dev.kavoshsampleproject.constant.Constant.BEARER;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -72,30 +73,34 @@ class PostControllerTest {
     }
 
     @Test
-    void testThatSavePostReturnsHttpStatusCode201Created() throws Exception {
+    void testSavePost_Success() throws Exception {
         when(postService.savePost(any(Post.class))).thenReturn(anyValidPost());
         when(postMapper.toPostDto(anyValidPost())).thenReturn(anyValidPostDto());
         when(postMapper.toPost(anyValidPostDto())).thenReturn(anyValidPost());
-        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(anyValidUserDetails());
         when(postLockService.getLock()).thenReturn(reentrantLock);
+        when(postLockService.getLock().tryLock()).thenReturn(true);
+        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(anyValidUserDetails());
 
         String token = generateToken();
 
         mockMvc.perform(post("/api/v1/post/save")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", BEARER + token)
-                        .content(objectMapper.writeValueAsString(anyValidPostDto()))
+                        .content(asJsonString(anyValidPostDto()))
                 )
                 .andExpect(status().isCreated());
+
+        verify(postLockService.getLock(), timeout(10000)).tryLock();
     }
 
     @Test
-    void testThatGetPostByIdReturnsTheExistingPost() throws Exception {
+    void testGetPostById_Success() throws Exception {
         when(postService.getPostById(anyLong())).thenReturn(Optional.of(anyValidPost()));
         when(postMapper.toPostDto(anyValidPost())).thenReturn(anyValidPostDto());
         when(postMapper.toPost(anyValidPostDto())).thenReturn(anyValidPost());
-        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(anyValidUserDetails());
         when(postLockService.getLock()).thenReturn(reentrantLock);
+        when(postLockService.getLock().tryLock()).thenReturn(true);
+        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(anyValidUserDetails());
 
         String token = generateToken();
 
@@ -104,15 +109,18 @@ class PostControllerTest {
                         .header("Authorization", BEARER + token)
                 )
                 .andExpect(status().isOk());
+
+        verify(postLockService.getLock(), timeout(10000)).tryLock();
     }
 
     @Test
-    void testThatGetPostByIdThrowsPostNotFoundException() throws Exception {
+    void testGetPostById_NotFound() throws Exception {
         when(postService.getPostById(anyLong())).thenReturn(Optional.empty());
         when(postMapper.toPostDto(anyValidPost())).thenReturn(anyValidPostDto());
         when(postMapper.toPost(anyValidPostDto())).thenReturn(anyValidPost());
-        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(anyValidUserDetails());
         when(postLockService.getLock()).thenReturn(reentrantLock);
+        when(postLockService.getLock().tryLock()).thenReturn(true);
+        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(anyValidUserDetails());
 
         String token = generateToken();
 
@@ -121,6 +129,97 @@ class PostControllerTest {
                         .header("Authorization", BEARER + token)
                 )
                 .andExpect(status().isNotFound());
+
+        verify(postLockService.getLock(), timeout(10000)).tryLock();
+    }
+
+    @Test
+    void testGetAllPosts_Success() throws Exception {
+        when(postService.getAllPosts()).thenReturn(List.of(anyValidPost()));
+        when(postMapper.toPostDto(anyValidPost())).thenReturn(anyValidPostDto());
+        when(postMapper.toPost(anyValidPostDto())).thenReturn(anyValidPost());
+        when(postLockService.getLock()).thenReturn(reentrantLock);
+        when(postLockService.getLock().tryLock()).thenReturn(true);
+        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(anyValidUserDetails());
+
+        String token = generateToken();
+
+        mockMvc.perform(get("/api/v1/post/all")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", BEARER + token)
+                )
+                .andExpect(status().isOk());
+
+        verify(postLockService.getLock(), timeout(10000)).tryLock();
+    }
+
+    @Test
+    void testSavePost_Conflict() throws Exception {
+        when(postService.savePost(any(Post.class))).thenReturn(anyValidPost());
+        when(postMapper.toPostDto(anyValidPost())).thenReturn(anyValidPostDto());
+        when(postMapper.toPost(anyValidPostDto())).thenReturn(anyValidPost());
+        when(postLockService.getLock()).thenReturn(reentrantLock);
+        when(postLockService.getLock().tryLock()).thenReturn(false);
+        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(anyValidUserDetails());
+
+        String token = generateToken();
+
+        mockMvc.perform(post("/api/v1/post/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", BEARER + token)
+                        .content(asJsonString(anyValidPostDto()))
+                )
+                .andExpect(status().isConflict());
+
+        verify(postLockService.getLock(), timeout(10000)).tryLock();
+    }
+
+    @Test
+    void testGetPostById_Conflict() throws Exception {
+        when(postService.getPostById(anyLong())).thenReturn(Optional.of(anyValidPost()));
+        when(postMapper.toPostDto(anyValidPost())).thenReturn(anyValidPostDto());
+        when(postMapper.toPost(anyValidPostDto())).thenReturn(anyValidPost());
+        when(postLockService.getLock()).thenReturn(reentrantLock);
+        when(postLockService.getLock().tryLock()).thenReturn(false);
+        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(anyValidUserDetails());
+
+        String token = generateToken();
+
+        mockMvc.perform(get("/api/v1/post/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", BEARER + token)
+                )
+                .andExpect(status().isConflict());
+
+        verify(postLockService.getLock(), timeout(10000)).tryLock();
+    }
+
+    @Test
+    void testGetAllPosts_Conflict() throws Exception {
+        when(postService.getAllPosts()).thenReturn(List.of(anyValidPost()));
+        when(postMapper.toPostDto(anyValidPost())).thenReturn(anyValidPostDto());
+        when(postMapper.toPost(anyValidPostDto())).thenReturn(anyValidPost());
+        when(postLockService.getLock()).thenReturn(reentrantLock);
+        when(postLockService.getLock().tryLock()).thenReturn(false);
+        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(anyValidUserDetails());
+
+        String token = generateToken();
+
+        mockMvc.perform(get("/api/v1/post/all")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", BEARER + token)
+                )
+                .andExpect(status().isConflict());
+
+        verify(postLockService.getLock(), timeout(10000)).tryLock();
+    }
+
+    private static String asJsonString(final Object obj) {
+        try {
+            return new ObjectMapper().writeValueAsString(obj);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }
