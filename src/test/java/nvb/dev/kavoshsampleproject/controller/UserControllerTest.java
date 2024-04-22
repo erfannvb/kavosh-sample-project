@@ -1,6 +1,8 @@
 package nvb.dev.kavoshsampleproject.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import nvb.dev.kavoshsampleproject.dto.UserDto;
+import nvb.dev.kavoshsampleproject.entity.User;
 import nvb.dev.kavoshsampleproject.mapper.UserMapper;
 import nvb.dev.kavoshsampleproject.service.UserService;
 import org.junit.jupiter.api.Test;
@@ -56,6 +58,132 @@ class UserControllerTest {
                         .content(userJson)
                 )
                 .andExpect(status().isCreated());
+    }
+
+    @Test
+    void testThatSaveUserReturnsHttpStatusCode400BadRequestWhenFullNameIsBlank() throws Exception {
+        User user = anyValidUser();
+        user.setFullName("");
+
+        UserDto userDto = anyValidUserDto();
+        userDto.setFullName("");
+
+        when(userService.saveUser(any(User.class))).thenReturn(user);
+        when(userMapper.toUserDto(user)).thenReturn(userDto);
+        when(userMapper.toUser(userDto)).thenReturn(user);
+
+        String userJson = objectMapper.writeValueAsString(userDto);
+
+        mockMvc.perform(post("/api/v1/user/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userJson)
+                )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testThatSaveUserReturnsHttpStatusCode400BadRequestWhenFullNameIsNull() throws Exception {
+        User user = anyValidUser();
+        user.setFullName(null);
+
+        UserDto userDto = anyValidUserDto();
+        userDto.setFullName(null);
+
+        when(userService.saveUser(any(User.class))).thenReturn(user);
+        when(userMapper.toUserDto(user)).thenReturn(userDto);
+        when(userMapper.toUser(userDto)).thenReturn(user);
+
+        String userJson = objectMapper.writeValueAsString(userDto);
+
+        mockMvc.perform(post("/api/v1/user/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userJson)
+                )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testThatSaveUserReturnsHttpStatusCode400BadRequestWhenUsernameIsBlank() throws Exception {
+        User user = anyValidUser();
+        user.setUsername("");
+
+        UserDto userDto = anyValidUserDto();
+        userDto.setUsername("");
+
+        when(userService.saveUser(any(User.class))).thenReturn(user);
+        when(userMapper.toUserDto(user)).thenReturn(userDto);
+        when(userMapper.toUser(userDto)).thenReturn(user);
+
+        String userJson = objectMapper.writeValueAsString(userDto);
+
+        mockMvc.perform(post("/api/v1/user/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userJson)
+                )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testThatSaveUserReturnsHttpStatusCode400BadRequestWhenUsernameIsNull() throws Exception {
+        User user = anyValidUser();
+        user.setUsername(null);
+
+        UserDto userDto = anyValidUserDto();
+        userDto.setUsername(null);
+
+        when(userService.saveUser(any(User.class))).thenReturn(user);
+        when(userMapper.toUserDto(user)).thenReturn(userDto);
+        when(userMapper.toUser(userDto)).thenReturn(user);
+
+        String userJson = objectMapper.writeValueAsString(userDto);
+
+        mockMvc.perform(post("/api/v1/user/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userJson)
+                )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testThatSaveUserReturnsHttpStatusCode400BadRequestWhenPasswordIsBlank() throws Exception {
+        User user = anyValidUser();
+        user.setPassword("");
+
+        UserDto userDto = anyValidUserDto();
+        userDto.setPassword("");
+
+        when(userService.saveUser(any(User.class))).thenReturn(user);
+        when(userMapper.toUserDto(user)).thenReturn(userDto);
+        when(userMapper.toUser(userDto)).thenReturn(user);
+
+        String userJson = objectMapper.writeValueAsString(userDto);
+
+        mockMvc.perform(post("/api/v1/user/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userJson)
+                )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testThatSaveUserReturnsHttpStatusCode400BadRequestWhenPasswordIsNull() throws Exception {
+        User user = anyValidUser();
+        user.setPassword(null);
+
+        UserDto userDto = anyValidUserDto();
+        userDto.setPassword(null);
+
+        when(userService.saveUser(any(User.class))).thenReturn(user);
+        when(userMapper.toUserDto(user)).thenReturn(userDto);
+        when(userMapper.toUser(userDto)).thenReturn(user);
+
+        String userJson = objectMapper.writeValueAsString(userDto);
+
+        mockMvc.perform(post("/api/v1/user/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userJson)
+                )
+                .andExpect(status().isBadRequest());
     }
 
     @Test
