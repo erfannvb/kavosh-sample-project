@@ -1,6 +1,7 @@
 package nvb.dev.kavoshsampleproject.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import nvb.dev.kavoshsampleproject.dto.PostDto;
 import nvb.dev.kavoshsampleproject.entity.Post;
 import nvb.dev.kavoshsampleproject.mapper.PostMapper;
 import nvb.dev.kavoshsampleproject.security.JwtService;
@@ -90,7 +91,67 @@ class PostControllerTest {
                 )
                 .andExpect(status().isCreated());
 
+        verify(postLockService, atLeastOnce()).getLock();
         verify(postLockService.getLock(), timeout(10000)).tryLock();
+        verify(postLockService.getLock(), atLeastOnce()).unlock();
+    }
+
+    @Test
+    void testSavePost_BadRequest_WhenTitleIsBlank() throws Exception {
+        Post post = anyValidPost();
+        post.setTitle("");
+
+        PostDto postDto = anyValidPostDto();
+        postDto.setTitle("");
+
+        when(postService.savePost(any(Post.class))).thenReturn(post);
+        when(postMapper.toPostDto(post)).thenReturn(postDto);
+        when(postMapper.toPost(postDto)).thenReturn(post);
+        when(postLockService.getLock()).thenReturn(reentrantLock);
+        when(postLockService.getLock().tryLock()).thenReturn(true);
+        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(anyValidUserDetails());
+
+        String token = generateToken();
+
+        mockMvc.perform(post("/api/v1/post/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", BEARER + token)
+                        .content(asJsonString(postDto))
+                )
+                .andExpect(status().isBadRequest());
+
+        verify(postLockService, atLeastOnce()).getLock();
+        verify(postLockService.getLock(), never()).tryLock();
+        verify(postLockService.getLock(), never()).unlock();
+    }
+
+    @Test
+    void testSavePost_BadRequest_WhenTitleIsNull() throws Exception {
+        Post post = anyValidPost();
+        post.setTitle(null);
+
+        PostDto postDto = anyValidPostDto();
+        postDto.setTitle(null);
+
+        when(postService.savePost(any(Post.class))).thenReturn(post);
+        when(postMapper.toPostDto(post)).thenReturn(postDto);
+        when(postMapper.toPost(postDto)).thenReturn(post);
+        when(postLockService.getLock()).thenReturn(reentrantLock);
+        when(postLockService.getLock().tryLock()).thenReturn(true);
+        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(anyValidUserDetails());
+
+        String token = generateToken();
+
+        mockMvc.perform(post("/api/v1/post/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", BEARER + token)
+                        .content(asJsonString(postDto))
+                )
+                .andExpect(status().isBadRequest());
+
+        verify(postLockService, atLeastOnce()).getLock();
+        verify(postLockService.getLock(), never()).tryLock();
+        verify(postLockService.getLock(), never()).unlock();
     }
 
     @Test
@@ -110,7 +171,9 @@ class PostControllerTest {
                 )
                 .andExpect(status().isOk());
 
+        verify(postLockService, atLeastOnce()).getLock();
         verify(postLockService.getLock(), timeout(10000)).tryLock();
+        verify(postLockService.getLock(), atLeastOnce()).unlock();
     }
 
     @Test
@@ -130,7 +193,9 @@ class PostControllerTest {
                 )
                 .andExpect(status().isNotFound());
 
+        verify(postLockService, atLeastOnce()).getLock();
         verify(postLockService.getLock(), timeout(10000)).tryLock();
+        verify(postLockService.getLock(), atLeastOnce()).unlock();
     }
 
     @Test
@@ -150,7 +215,9 @@ class PostControllerTest {
                 )
                 .andExpect(status().isOk());
 
+        verify(postLockService, atLeastOnce()).getLock();
         verify(postLockService.getLock(), timeout(10000)).tryLock();
+        verify(postLockService.getLock(), atLeastOnce()).unlock();
     }
 
     @Test
@@ -171,7 +238,9 @@ class PostControllerTest {
                 )
                 .andExpect(status().isConflict());
 
+        verify(postLockService, atLeastOnce()).getLock();
         verify(postLockService.getLock(), timeout(10000)).tryLock();
+        verify(postLockService.getLock(), never()).unlock();
     }
 
     @Test
@@ -191,7 +260,9 @@ class PostControllerTest {
                 )
                 .andExpect(status().isConflict());
 
+        verify(postLockService, atLeastOnce()).getLock();
         verify(postLockService.getLock(), timeout(10000)).tryLock();
+        verify(postLockService.getLock(), never()).unlock();
     }
 
     @Test
@@ -211,7 +282,9 @@ class PostControllerTest {
                 )
                 .andExpect(status().isConflict());
 
+        verify(postLockService, atLeastOnce()).getLock();
         verify(postLockService.getLock(), timeout(10000)).tryLock();
+        verify(postLockService.getLock(), never()).unlock();
     }
 
     private static String asJsonString(final Object obj) {
