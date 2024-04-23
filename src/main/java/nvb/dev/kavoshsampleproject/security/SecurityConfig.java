@@ -36,7 +36,7 @@ public class SecurityConfig {
                         .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(((request, response, authException) ->
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(((_, response, authException) ->
                         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage())))
                 )
                 .authenticationProvider(authenticationProvider())
