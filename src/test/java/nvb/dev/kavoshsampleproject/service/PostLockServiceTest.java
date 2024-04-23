@@ -37,7 +37,7 @@ class PostLockServiceTest {
             threads[i] = new Thread(() -> {
                 postLockService.getLock().lock();
                 try {
-                    Thread.sleep(1000); // Simulate some work
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } finally {
