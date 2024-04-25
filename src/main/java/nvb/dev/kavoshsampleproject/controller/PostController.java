@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
-import java.util.function.Function;
+import java.util.function.Supplier;
 
 @RestController
 @RequestMapping(path = "/api/v1")
@@ -27,56 +27,44 @@ public class PostController {
 
     @PostMapping(path = "/post/save")
     public ResponseEntity<PostDto> savePost(@RequestBody @Valid PostDto postDto) throws InterruptedException {
-        return executeWithLock(locked -> {
-            if (Boolean.TRUE.equals(locked)) {
-                Post post = postMapper.toPost(postDto);
-                Post savedPost = postService.savePost(post);
-                return new ResponseEntity<>(postMapper.toPostDto(savedPost), HttpStatus.CREATED);
-            } else {
-                return new ResponseEntity<>(HttpStatus.CONFLICT);
-            }
+        return executeWithLock(() -> {
+            Post post = postMapper.toPost(postDto);
+            Post savedPost = postService.savePost(post);
+            return new ResponseEntity<>(postMapper.toPostDto(savedPost), HttpStatus.CREATED);
         });
     }
 
     @GetMapping(path = "/post/{id}")
     public ResponseEntity<PostDto> getPostById(@PathVariable("id") Long id) throws InterruptedException {
-        return executeWithLock(locked -> {
-            if (Boolean.TRUE.equals(locked)) {
-                Optional<Post> foundPost = postService.getPostById(id);
-                return foundPost.map(post -> {
-                    PostDto postDto = postMapper.toPostDto(post);
-                    return new ResponseEntity<>(postDto, HttpStatus.OK);
-                }).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
-            } else {
-                return new ResponseEntity<>(HttpStatus.CONFLICT);
-            }
+        return executeWithLock(() -> {
+            Optional<Post> foundPost = postService.getPostById(id);
+            return foundPost.map(post -> {
+                PostDto postDto = postMapper.toPostDto(post);
+                return new ResponseEntity<>(postDto, HttpStatus.OK);
+            }).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
         });
     }
 
     @GetMapping(path = "/post/all")
     public ResponseEntity<List<PostDto>> getAllPosts() throws InterruptedException {
-        return executeWithLock(locked -> {
-            if (Boolean.TRUE.equals(locked)) {
-                List<Post> posts = postService.getAllPosts();
-                List<PostDto> postDtoList = posts.stream().map(postMapper::toPostDto).toList();
-                return new ResponseEntity<>(postDtoList, HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>(HttpStatus.CONFLICT);
-            }
+        return executeWithLock(() -> {
+            List<Post> posts = postService.getAllPosts();
+            List<PostDto> postDtoList = posts.stream().map(postMapper::toPostDto).toList();
+            return new ResponseEntity<>(postDtoList, HttpStatus.OK);
         });
     }
 
-    private <R> ResponseEntity<R> executeWithLock(Function<Boolean, ResponseEntity<R>> operation) throws InterruptedException {
+    private <T> ResponseEntity<T> executeWithLock(Supplier<ResponseEntity<T>> operation) throws InterruptedException {
         Lock lock = postLockService.getLock();
         if (lock.tryLock()) {
             try {
                 Thread.sleep(10000);
-                return operation.apply(true);
+                return operation.get();
             } finally {
                 lock.unlock();
             }
         } else {
-            return operation.apply(false);
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
     }
 
