@@ -55,7 +55,7 @@ public class PostController {
 
     @GetMapping(path = "/post/all")
     public ResponseEntity<List<PostDto>> getAllPosts() throws InterruptedException {
-        return executeListWithLock(locked -> {
+        return executeWithLock(locked -> {
             if (Boolean.TRUE.equals(locked)) {
                 List<Post> posts = postService.getAllPosts();
                 List<PostDto> postDtoList = posts.stream().map(postMapper::toPostDto).toList();
@@ -66,21 +66,7 @@ public class PostController {
         });
     }
 
-    private ResponseEntity<PostDto> executeWithLock(Function<Boolean, ResponseEntity<PostDto>> operation) throws InterruptedException {
-        Lock lock = postLockService.getLock();
-        if (lock.tryLock()) {
-            try {
-                Thread.sleep(10000);
-                return operation.apply(true);
-            } finally {
-                lock.unlock();
-            }
-        } else {
-            return operation.apply(false);
-        }
-    }
-
-    private ResponseEntity<List<PostDto>> executeListWithLock(Function<Boolean, ResponseEntity<List<PostDto>>> operation) throws InterruptedException {
+    private <R> ResponseEntity<R> executeWithLock(Function<Boolean, ResponseEntity<R>> operation) throws InterruptedException {
         Lock lock = postLockService.getLock();
         if (lock.tryLock()) {
             try {
