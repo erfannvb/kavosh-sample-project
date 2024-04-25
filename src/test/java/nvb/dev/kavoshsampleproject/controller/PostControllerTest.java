@@ -18,6 +18,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -90,6 +91,29 @@ class PostControllerTest {
                         .content(asJsonString(anyValidPostDto()))
                 )
                 .andExpect(status().isCreated());
+
+        verify(postLockService, atLeastOnce()).getLock();
+        verify(postLockService.getLock(), timeout(10000)).tryLock();
+        verify(postLockService.getLock(), atLeastOnce()).unlock();
+    }
+
+    @Test
+    void testSavePost_ThrowsUnauthorizedException() throws Exception {
+        when(postService.savePost(any(Post.class))).thenThrow(UsernameNotFoundException.class);
+        when(postMapper.toPostDto(anyValidPost())).thenReturn(anyValidPostDto());
+        when(postMapper.toPost(anyValidPostDto())).thenReturn(anyValidPost());
+        when(postLockService.getLock()).thenReturn(reentrantLock);
+        when(postLockService.getLock().tryLock()).thenReturn(true);
+        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(anyValidUserDetails());
+
+        String token = generateToken();
+
+        mockMvc.perform(post("/api/v1/post/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", BEARER + token)
+                        .content(asJsonString(anyValidPostDto()))
+                )
+                .andExpect(status().isUnauthorized());
 
         verify(postLockService, atLeastOnce()).getLock();
         verify(postLockService.getLock(), timeout(10000)).tryLock();
@@ -177,6 +201,28 @@ class PostControllerTest {
     }
 
     @Test
+    void testGetPostById_ThrowsUnauthorizedException() throws Exception {
+        when(postService.getPostById(anyLong())).thenThrow(UsernameNotFoundException.class);
+        when(postMapper.toPostDto(anyValidPost())).thenReturn(anyValidPostDto());
+        when(postMapper.toPost(anyValidPostDto())).thenReturn(anyValidPost());
+        when(postLockService.getLock()).thenReturn(reentrantLock);
+        when(postLockService.getLock().tryLock()).thenReturn(true);
+        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(anyValidUserDetails());
+
+        String token = generateToken();
+
+        mockMvc.perform(get("/api/v1/post/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", BEARER + token)
+                )
+                .andExpect(status().isUnauthorized());
+
+        verify(postLockService, atLeastOnce()).getLock();
+        verify(postLockService.getLock(), timeout(10000)).tryLock();
+        verify(postLockService.getLock(), atLeastOnce()).unlock();
+    }
+
+    @Test
     void testGetPostById_NotFound() throws Exception {
         when(postService.getPostById(anyLong())).thenReturn(Optional.empty());
         when(postMapper.toPostDto(anyValidPost())).thenReturn(anyValidPostDto());
@@ -214,6 +260,28 @@ class PostControllerTest {
                         .header("Authorization", BEARER + token)
                 )
                 .andExpect(status().isOk());
+
+        verify(postLockService, atLeastOnce()).getLock();
+        verify(postLockService.getLock(), timeout(10000)).tryLock();
+        verify(postLockService.getLock(), atLeastOnce()).unlock();
+    }
+
+    @Test
+    void testGetAllPosts_ThrowsUnauthorizedException() throws Exception {
+        when(postService.getAllPosts()).thenThrow(UsernameNotFoundException.class);
+        when(postMapper.toPostDto(anyValidPost())).thenReturn(anyValidPostDto());
+        when(postMapper.toPost(anyValidPostDto())).thenReturn(anyValidPost());
+        when(postLockService.getLock()).thenReturn(reentrantLock);
+        when(postLockService.getLock().tryLock()).thenReturn(true);
+        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(anyValidUserDetails());
+
+        String token = generateToken();
+
+        mockMvc.perform(get("/api/v1/post/all")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", BEARER + token)
+                )
+                .andExpect(status().isUnauthorized());
 
         verify(postLockService, atLeastOnce()).getLock();
         verify(postLockService.getLock(), timeout(10000)).tryLock();
